@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  nginx-agent:
+    build: .
+    container_name: nginx-agent
+    restart: unless-stopped
+    network_mode: "host"  # 使用host网络模式以便访问宿主机的Nginx
+    volumes:
+      - /etc/nginx:/etc/nginx:ro        # Nginx配置（只读）
+      - /var/log/nginx:/var/log/nginx:ro # Nginx日志（只读）
+      - /var/run:/var/run:ro            # PID文件等（只读）
+      - nginx-agent-data:/app/data       # Agent数据持久化
+    environment:
+      - FLASK_ENV=production
+      - API_HOST=0.0.0.0
+      - API_PORT=5000
+      - NGINX_CONFIG_PATH=/etc/nginx/nginx.conf
+      - NGINX_BACKUP_DIR=/app/data/backup
+      - NGINX_PID_PATH=/var/run/nginx.pid
+      - NGINX_BINARY=/usr/sbin/nginx
+      - NGINX_LOG_DIR=/var/log/nginx
+      - AUTH_TOKEN=${AUTH_TOKEN:-}  # 从环境变量读取，如果未设置则使用空值
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  nginx-agent-data:
+    driver: local

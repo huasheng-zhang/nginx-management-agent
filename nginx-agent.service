@@ -1,0 +1,25 @@
+[Unit]
+Description=Nginx Agent API
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/nginx-agent
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="FLASK_ENV=production"
+ExecStart=/usr/local/bin/gunicorn --workers 4 --bind 0.0.0.0:5000 --timeout 60 --access-logfile /var/log/nginx-agent-access.log --error-logfile /var/log/nginx-agent-error.log main:app
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=false
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/etc/nginx /var/log/nginx /var/run
+
+[Install]
+WantedBy=multi-user.target
